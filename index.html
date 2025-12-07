@@ -43,7 +43,7 @@
 
 <script>
 
-// Mapa de fotos (igual que tu Python)
+// Mapa de fotos
 const fotos = {
     "May Osorio": "may osorio.png",
     "ElCone": "elcone.png",
@@ -90,55 +90,63 @@ const generos = {
     "Andysuz": "F"
 };
 
+// URL de tu proxy Replit
+const PROXY_URL = "https://proxy-server--josepino999.replit.app/proxy";
+
 async function cargar() {
+    try {
+        const res = await fetch(PROXY_URL);
+        const data = await res.json();
 
-    const res = await fetch("https://app.rankedvote.co/api/settings/rv/lamansiondia4");
-    const data = await res.json();
+        const votos = data.payload.settings.results.visual_data[0];
+        const lista = Object.entries(votos).filter(e => e[0] !== "round");
 
-    const votos = data.payload.settings.results.visual_data[0];
-    const lista = Object.entries(votos).filter(e => e[0] !== "round");
+        // Ordenar por votos
+        lista.sort((a,b) => b[1] - a[1]);
 
-    // Ordenar por votos
-    lista.sort((a,b) => b[1] - a[1]);
+        const total = lista.reduce((acc, x) => acc + x[1], 0);
 
-    const total = lista.reduce((acc, x) => acc + x[1], 0);
+        // Separar por género
+        const hombres = lista.filter(e => generos[e[0]] === "M");
+        const mujeres = lista.filter(e => generos[e[0]] === "F");
 
-    // Separar por género
-    const hombres = lista.filter(e => generos[e[0]] === "M");
-    const mujeres = lista.filter(e => generos[e[0]] === "F");
+        const peligroHombre = hombres.sort((a,b)=>a[1]-b[1])[0];
+        const peligroMujer  = mujeres.sort((a,b)=>a[1]-b[1])[0];
 
-    const peligroHombre = hombres.sort((a,b)=>a[1]-b[1])[0];
-    const peligroMujer  = mujeres.sort((a,b)=>a[1]-b[1])[0];
+        document.getElementById("peligro_hombre").innerHTML = generarPeligro("👱 HOMBRE", peligroHombre);
+        document.getElementById("peligro_mujer").innerHTML  = generarPeligro("👩 MUJER", peligroMujer);
 
-    document.getElementById("peligro_hombre").innerHTML = generarPeligro("👱 HOMBRE", peligroHombre);
-    document.getElementById("peligro_mujer").innerHTML  = generarPeligro("👩 MUJER", peligroMujer);
+        // Dibujar cards
+        const div = document.getElementById("lista");
+        div.innerHTML = "";
 
-    // Dibujar cards
-    const div = document.getElementById("lista");
-    div.innerHTML = "";
+        lista.forEach(([nombre,votos]) => {
+            const porc = (votos / total * 100).toFixed(1);
+            const esPeligro = nombre === peligroHombre[0] || nombre === peligroMujer[0];
 
-    lista.forEach(([nombre,votos]) => {
-        const porc = (votos / total * 100).toFixed(1);
-        const esPeligro = nombre === peligroHombre[0] || nombre === peligroMujer[0];
-
-        div.innerHTML += `
-            <div class="card ${esPeligro ? "peligro" : ""}">
-                <div class="fila">
-                    <img class="foto" src="./fotos/${fotos[nombre]}">
-                    <div>
-                        <div style="font-size:18px; font-weight:bold">${nombre}</div>
-                        <div>${votos.toLocaleString()} | ${porc}%</div>
+            div.innerHTML += `
+                <div class="card ${esPeligro ? "peligro" : ""}">
+                    <div class="fila">
+                        <img class="foto" src="./fotos/${fotos[nombre]}">
+                        <div>
+                            <div style="font-size:18px; font-weight:bold">${nombre}</div>
+                            <div>${votos.toLocaleString()} | ${porc}%</div>
+                        </div>
+                    </div>
+                    <div class="barra">
+                        <div style="width:${porc}%; background:${esPeligro ? "red" : "#3B82F6"}"></div>
                     </div>
                 </div>
-                <div class="barra">
-                    <div style="width:${porc}%; background:${esPeligro ? "red" : "#3B82F6"}"></div>
-                </div>
-            </div>
-        `;
-    });
+            `;
+        });
+
+    } catch(err) {
+        console.error("Error al cargar datos:", err);
+    }
 }
 
 function generarPeligro(titulo, dato){
+    if (!dato) return "";
     return `
         <div style="margin-top:15px; padding:10px; background:#1a1a1a; border-radius:12px;">
             <div style="color:#ff4a4a; font-weight:bold">${titulo}</div>
