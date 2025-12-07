@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VOTACIÓN EN VIVO – MANSIÓN</title>
+<style>
+    body { background:#0f0f0f; color:white; font-family:Segoe UI; margin:0; padding:0; }
+    .contenedor { display:flex; padding:20px; gap:20px; }
+    .lista { flex:3; background:#111; padding:15px; border-radius:10px; height:90vh; overflow-y:auto; }
+    .peligro { flex:1; background:#141414; padding:15px; border-radius:10px; }
+    .card {
+        background:#1a1a1a;
+        margin-bottom:18px; padding:15px;
+        border-radius:15px;
+    }
+    .card.peligro { border:2px solid red; background:#300; }
+    .fila { display:flex; gap:15px; align-items:center; }
+    .foto {
+        width:80px; height:80px;
+        border-radius:50%; object-fit:cover;
+    }
+    .barra {
+        width:100%; height:12px;
+        background:#333; border-radius:10px;
+        margin-top:10px; overflow:hidden;
+    }
+    .barra > div {
+        height:100%; border-radius:10px;
+    }
+</style>
+</head>
+<body>
+
+<div class="contenedor">
+    <div class="lista" id="lista"></div>
+
+    <div class="peligro" id="peligro">
+        <h2>⚠️ EN PELIGRO</h2>
+        <div id="peligro_hombre"></div>
+        <div id="peligro_mujer"></div>
+    </div>
+</div>
+
+<script>
+
+// Mapa de fotos (igual que tu Python)
+const fotos = {
+    "May Osorio": "may osorio.png",
+    "ElCone": "elcone.png",
+    "Natalia Es Mejor": "natalia es mejor.png",
+    "Ismael Sanchez": "ismaelsanchez.png",
+    "Emikukis": "emikukis.png",
+    "El Agropecuario": "elagropecuario.png",
+    "ElDomi": "eldomi.png",
+    "Alejandra buitrago": "alejandrabuitrago.png",
+    "Edits De Mierda": "edm.png",
+    "La Piquiña": "lapiquiña.png",
+    "Cami Pulgarin": "camipulgarin.png",
+    "KingLuiz": "kingluis.png",
+    "Juanda": "juanda.png",
+    "Karen Orozco": "karen orozco.png",
+    "Pesque": "pesque.png",
+    "Ness": "ness.png",
+    "Malee": "male.png",
+    "SoyFrezo": "soyfrezo.png",
+    "Soley": "soley.png",
+    "Andysuz": "andysuz.png"
+};
+
+const generos = {
+    "May Osorio": "F",
+    "ElCone": "M",
+    "Natalia Es Mejor": "F",
+    "Ismael Sanchez": "M",
+    "Emikukis": "F",
+    "El Agropecuario": "M",
+    "ElDomi": "M",
+    "Alejandra buitrago": "F",
+    "Edits De Mierda": "M",
+    "La Piquiña": "M",
+    "Cami Pulgarin": "F",
+    "KingLuiz": "M",
+    "Juanda": "M",
+    "Karen Orozco": "F",
+    "Pesque": "M",
+    "Ness": "F",
+    "Malee": "F",
+    "SoyFrezo": "M",
+    "Soley": "F",
+    "Andysuz": "F"
+};
+
+async function cargar() {
+
+    const res = await fetch("https://app.rankedvote.co/api/settings/rv/lamansiondia4");
+    const data = await res.json();
+
+    const votos = data.payload.settings.results.visual_data[0];
+    const lista = Object.entries(votos).filter(e => e[0] !== "round");
+
+    // Ordenar por votos
+    lista.sort((a,b) => b[1] - a[1]);
+
+    const total = lista.reduce((acc, x) => acc + x[1], 0);
+
+    // Separar por género
+    const hombres = lista.filter(e => generos[e[0]] === "M");
+    const mujeres = lista.filter(e => generos[e[0]] === "F");
+
+    const peligroHombre = hombres.sort((a,b)=>a[1]-b[1])[0];
+    const peligroMujer  = mujeres.sort((a,b)=>a[1]-b[1])[0];
+
+    document.getElementById("peligro_hombre").innerHTML = generarPeligro("👱 HOMBRE", peligroHombre);
+    document.getElementById("peligro_mujer").innerHTML  = generarPeligro("👩 MUJER", peligroMujer);
+
+    // Dibujar cards
+    const div = document.getElementById("lista");
+    div.innerHTML = "";
+
+    lista.forEach(([nombre,votos]) => {
+        const porc = (votos / total * 100).toFixed(1);
+        const esPeligro = nombre === peligroHombre[0] || nombre === peligroMujer[0];
+
+        div.innerHTML += `
+            <div class="card ${esPeligro ? "peligro" : ""}">
+                <div class="fila">
+                    <img class="foto" src="./fotos/${fotos[nombre]}">
+                    <div>
+                        <div style="font-size:18px; font-weight:bold">${nombre}</div>
+                        <div>${votos.toLocaleString()} | ${porc}%</div>
+                    </div>
+                </div>
+                <div class="barra">
+                    <div style="width:${porc}%; background:${esPeligro ? "red" : "#3B82F6"}"></div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function generarPeligro(titulo, dato){
+    return `
+        <div style="margin-top:15px; padding:10px; background:#1a1a1a; border-radius:12px;">
+            <div style="color:#ff4a4a; font-weight:bold">${titulo}</div>
+            <img class="foto" src="./fotos/${fotos[dato[0]]}">
+            <div style="font-size:17px">${dato[0]}</div>
+            <div>${dato[1].toLocaleString()} votos</div>
+        </div>
+    `;
+}
+
+// Actualizar cada 2s
+setInterval(cargar, 2000);
+cargar();
+
+</script>
+</body>
+</html>
